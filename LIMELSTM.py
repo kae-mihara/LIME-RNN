@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*- 
 import numpy as np
 import tensorflow as tf
-import reader
 import os
 
 flags = tf.flags
 flags.DEFINE_integer("num_layers",1, "LSTM number of layer")
 flags.DEFINE_integer("hidden_size",128, "LSTM hidden size")
 
-flags.DEFINE_integer("embedding_size",24, "Dimension of data")
+flags.DEFINE_integer("embedding_size",97, "Dimension of data")
 flags.DEFINE_float("missing_flag",-1.0, "missing value is marked with -1.0")
+#flags.DEFINE_string("ip","", "")
 
 FLAGS = flags.FLAGS
 
@@ -93,11 +93,27 @@ class TestConfig(object):
     hidden_size = FLAGS.hidden_size        
     batch_size = 1
     embedding_size=FLAGS.embedding_size
-    
+
+def ptb_iterator(raw_data, batch_size, num_steps,dim):
+    row = raw_data.shape[0]
+    data_num = row-num_steps+1
+    if batch_size>=(data_num-1) or ((data_num-1)%batch_size!=0) :
+        raise ValueError("Error, decrease batch_size or num_steps")
+    data2 = np.zeros([data_num, num_steps ,dim])
+    for i in range(data_num):
+        data2[i] = raw_data[i:i+num_steps,:]
+
+    batch_len=(data_num-1)//batch_size
+    for i in range(batch_len):
+        x = data2[i*batch_size:(i+1)*batch_size,:,:]
+        y = data2[i*batch_size+1:(i+1)*batch_size+1,:,:]
+        yield (x,y)
+
+
 def run_epoch(session, model, data, eval_op):
     header_pre = []
     pre = []
-    for step,(x,y) in enumerate(reader.ptb_iterator(data, model.batch_size,model.num_steps,FLAGS.embedding_size)):
+    for step,(x,y) in enumerate(ptb_iterator(data, model.batch_size,model.num_steps,FLAGS.embedding_size)):
         _, prediction= session.run([eval_op, model.prediction],
                                  {model.input_data: x,
                                   model.targets:    y})
