@@ -131,7 +131,7 @@ def get_config(flag):
         return TestConfig()
         
 def main(_):
-
+    import reader
     # get config
     config = get_config('Train')
     test_config = get_config('Test')
